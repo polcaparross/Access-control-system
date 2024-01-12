@@ -1,0 +1,273 @@
+@startuml
+'https://plantuml.com/class-diagram
+skinparam classAttributeIconSize 0
+
+class Webserver {
+- {static} LOGGER : Logger
+- {static} PORT :int
+- {static} FORMATTER : DateTimeFormatter
+- {static} instance : Webserver
++ Webserver()
++ {static} getInstance() : Webserver
+}
+Webserver --> Webserver : instance
+
+class SocketThread {
+- insocked : Socked
+- makeRequest(tokens : String[]) : Request
+- makeRequestReader(tokens : String[]) : RequestReader
+- makeRequestArea(tokens : String[]) : RequestArea
+- makeHeaderAnswer() : String
+- makeJsonAnswer(request : Request) : String
++ run()
+}
+
+Webserver +-right- SocketThread
+
+note right of SocketThread
+inner class
+of Webserver
+end note
+
+class UserGroup {
+- id : String
+- schedule : Schedule
+- actions : String[]
++ UserGroup(id : String, schedule : Schedule, actions : String[],users : User[], areas : Area[])
++ getUsers() : User[]
++ getAreas() : Area[]
++ getActions() : String[]
++ getSchedule() : Schedule
+}
+UserGroup --> Area : areas
+UserGroup --> User : users
+DirectoryUserGroups o--> "1..*" UserGroup : "userGroups"
+Schedule --> "*" UserGroup : schedule
+UserGroup : *--> "*" User : users
+
+class Door implements Observer{
+- {static} LOGGER : Logger
+- id : String
+- from : Area
+- to : Area
+- closed : boolean
+- state : DoorState
+- tiempoInicio : boolean
++ Door(id : String)
++ getClock() : Clock
++ setTiempoInicio(tInicio : Long)
++ update(o : Observable, dateTime : Long)
++ processRequest(request : RequestReader)
++ setState(doorState : DoorState)
++ toJson() : JSONObject
++ toString() : String
++ isClosed() :boolean
++ setClosed(b : boolean)
++ getStateName() : String
++ getId() : String
++ getTo() : Area
++ getFrom() : Area
+- doAction(action : String)
+}
+Door ---> "1..*" Clock : "clock"
+
+abstract class DoorState{
+#door : Door
+#name : String
++ DoorState(door : Door)
++ open()
++ close()
++ lock()
++ unlock()
++ unlock_shortly()
++ setName(name : String)
+}
+
+abstract class Observable {
+- changed : boolean
+- deteniendoReloj : boolean
++ isDeteniendoReloj() : boolean
++ deleteObserver(ob : Observer)
++ setChanged(cambiado : boolean)
++ notifyObserver(dateTime : Long)
+}
+Observable --> Observer : observers
+
+interface Observer {
+update(o : Observable, dateTime : Long)
+}
+
+class Unlocked extends DoorState {
+- {static} LOGGER : Logger
++ Unlocked(door : Door)
++ open()
++ close()
++ lock()
++ unlock()
++ unlock_shortly()
+}
+
+class Locked extends DoorState {
+- {static} LOGGER : Logger
++ Locked(door : Door)
++ open()
++ close()
++ lock()
++ unlock()
++ unlock_shortly()
+}
+
+class UnlockedShortly extends DoorState {
+- {static} LOGGER : Logger
++ UnlockedShortly(door : Door)
++ open()
++ close()
++ lock()
++ unlock()
++ unlock_shortly()
+}
+
+class Propped extends DoorState {
+- {static} LOGGER : Logger
++ Propped(door : Door)
++ open()
++ close()
++ lock()
++ unlock()
++ unlock_shortly()
+}
+
+class States {
++ {static} LOCKED : String
++ {static} UNLOCKED : String
++ {static} UNLOCKED_SHORTLY: String
++ {static} PROPPED: String
+}
+
+class Actions {
++ {static} LOCK : String
++ {static} UNLOCK : String
++ {static} OPEN : String
++ {static} CLOSE : String
++ {static} UNLOCK_SHORTLY: String
+}
+
+class User {
+- name : String
+- credential : String
++ User(name: String, credential: String)
++ toString() : String
++ getCredential() : String
++ getName() : String
+}
+
+
+abstract class Area {
+- id : String
+- doors : List<Door>
++ Area(id : String)
++ getId() : String
++ {abstract} getFrom() : Area
++ {abstract} getDoors() : Door[]
++ {abstract} getDoorsGivingAccess() : Door[]
++ {abstract} findAreaById(id : String) : Area
+}
+
+class Clock extends Observable{
+- timer : Timer
+- dateTime : Long
+- relojIniciado : boolean
+- deteniendoReloj : boolean
+- {static} instance : Clock
+- Clock()
++ iniciarReloj()
++ stopClock()
++ isDeteniendoReloj() : boolean
++ {static} getInstance() : Clock
+}
+
+Clock --> Clock : instance
+
+class ClockTask extends TimerTask {
++ run()
+}
+
+class Partitions extends Area {
+- from: Area
+- childs : Area[]
++ Partitions(id : String, from : Area)
++ getFrom() : Area
++ addChilds(childs : Area[])
++ getDoorsGivingAccess() : Door[]
++ getDoors() : Door[]
++ findAreaById(id : String) : Area
++ getId() : String
+}
+
+class Spaces extends Area {
+- from: Area
++ Spaces(id : String, from : Area)
++  getFrom() : Area
++ getDoorsGivingAccess() : Door[]
++ getDoors() : Door[]
++ findAreaById(id : String) : Area
++ getId() : String
+}
+
+class Schedule {
+- dateInici : LocalDate
+- dateFin : LocalDate
+- timeInici : LocalTime
+- timeFin : LocalTime
+- days : DayOfWeek[]
++ Schedule(dateInici : LocalDate, dateFin : LocalDate, days : DayOfWeek[], timeInici : LocalDate, timeFin : LocalDate)
++ isSchedule(now : LocalDateTime) : boolean
++ getDateInici() : LocalDate
++ getDateFin() : LocalDate
++ getTimeInici() : LocalTime
++ getTimeFin() : LocalTime
++ getDays : DayOfWeek[]
+}
+
+class DirectoryDoorsAndAreas {
+- {static} LOGGER : Logger
+- {static} allAreas : Area[]
+- {static} allDoors : Door[]
+- {static} root : Area
++ {static} makeDoorsAndAreas()
++ {static} findAreaById(id : String) : Area
++ {static} findDoorById(id : String) : Door
++ {static} getAllAreas() : Area[]
++ {static} getAllDoors() : Door[]
+}
+DirectoryDoorsAndAreas --> "*" Area : "allAreas"
+DirectoryDoorsAndAreas --> "*" Door : "allDoors"
+
+class DirectoryUserGroups {
+- {static} LOGGER : Logger
+- {static} ONE : Integer
+- {static} YEAR : Integer
+- {static} userGroups : UserGroups[]
++ {static} makeUserGroup()
++ {static} findUserByCredential(credential : String) : User
++ {static} findUserGroupByUser(credential : String) : UserGroup
+}
+
+class Main {
++ {static} main(args : String)
+}
+
+note right of Main::main
+DirectoryDoors.makeDoors()
+DiretoryUsers.makeUsers()
+new Webserver()
+end note
+
+DirectoryUserGroups -[hidden]down- Schedule
+DirectoryDoorsAndAreas -[hidden]left- Door
+Area -[hidden]up- User
+Main -[hidden]down- Webserver
+Door -down-> DoorState : state
+Door -[hidden]right- States
+States -[hidden]right- Actions
+@enduml
